@@ -26,8 +26,8 @@ def fitness_ackley(genotype = [0.0]):
     term1 = (-c1) * np.exp( -c2 * ((1 / numGenes) * (sum1 ** ( 0.5 ))))
     term2 = -np.exp(( 1 / numGenes ) * sum2)
 
-    return term1 + term2 + c1 + np.exp(1)
-
+    err = term1 + term2 + c1 + np.exp(1)
+    return (err)
 if __name__ == '__main__':
 	genotype = [0.0, 0.0, 0.0]
 	print fitness_ackley( genotype )
