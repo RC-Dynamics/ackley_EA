@@ -4,17 +4,18 @@ from tqdm import tqdm
 from fitness_ackley import fitness_ackley as fitness
 import copy
 
-class SimpleEE:
-	def __init__(self):
-		# self.genotype = [0.1  for _ in range(0, 30)]
-		self.genotype = [(random.random()*30.0) - 15.0  for _ in range(0, 30)]
+
+class SimpleEE():
+
+	def __init__(self, genotype):
+		self.genotype = genotype
 		self.mutationStep = 0.8
 		self.stdDev = 5
 		self.hitVector = [0 for _ in range(0,5)]
 		self.lastFitness = self.getFitness()
 		self.iter = 0
-		self.stdMinValue = 1e-2
-
+		self.stdMinValue = 1
+		
 	def mutation(self):
 		hit  = np.sum(self.hitVector)
 		if hit > 1:
@@ -38,25 +39,26 @@ class SimpleEE:
 	def getFitness(self):
 		return fitness(self.genotype)
 
-class EE:
-	def __init__(self):
-		#self.genotype = [0.1  for _ in range(0, 30)]
-		self.genotype = [(random.random()*30 ) - 15  for _ in range(0, 30)]
-		self.mutationStep = [0.8 for _ in range(0,30)]
-		self.stdDev = [5 for _ in range(0, 30)]
+class EE2:
+	def __init__(self, genotype):
+		self.genotype = genotype
+		self.mutationStep = [0.8 for _ in range(0,30)];
+		self.stdDev = [5 for _ in range(0, 30)];
 		self.hitVector = [[0, 0, 0, 0, 0] for _ in range(0,30)]
 		
 		self.lastFitness = self.getFitness()
 		self.iter = 0
-		self.stdMinValue = 1e-2
+		self.stdMinValue = 1
 
 	def mutation(self):
+		if self.iter % 250 == 250-1:
+			self.stdMinValue /= 5
 
 		for i in range(30):
 			hit  = np.sum(self.hitVector[i])
 			if hit > 1:
 				self.stdDev[i] /= self.mutationStep[i]
-			elif hit < 1:
+			elif hit < 1 and self.stdDev[i] >= self.stdMinValue:
 				self.stdDev[i] *= self.mutationStep[i]
 			newGenotype = copy.deepcopy(self.genotype)
 			newGenotype[i] += np.random.normal(0.0, self.stdDev[i])
@@ -80,18 +82,23 @@ class EE:
 
 if __name__ == '__main__':
 	num_iterations = 20000
-
-	SEE = SimpleEE()
+	#genotype = [0.1  for _ in range(0, 30)]
+	genotype = [(random.random()*30 ) - 15  for _ in range(0, 30)]
+	
+	SEE = EE2(genotype)
 	
 	fitList = []
-	for i in tqdm( range(0, num_iterations) ):
+	tqdmBar = tqdm( range(0, num_iterations) )
+	for i in tqdmBar:
 		fitList.append(SEE.getFitness())
+		#tqdmBar.set_description("Fit: {:0.2f}, StdDev: {:0.2f}".format(SEE.getFitness(), SEE.stdDev))
+		tqdmBar.set_description("Fit: {}, StdDev: {}".format(SEE.getFitness(), SEE.stdDev[0]))
+		
 		SEE.mutation()
+
 		#print  SEE.genotype, SEE.getFitness()
 
 	print ("\n\nInitial Fitness: {}".format(fitList[0]))
 	print ("Fitness After {} Iterations: {}".format(num_iterations, np.min(fitList)))
 	print ("Final Solution:")
-	#print (SEE.genotype)
-
 
