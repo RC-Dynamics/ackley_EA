@@ -5,7 +5,7 @@ from fitness_ackley import fitness_ackley as fitness
 import copy
 
 
-class SimpleEE():
+class SimpleEA():
 
 	def __init__(self, genotype):
 		self.genotype = genotype
@@ -39,7 +39,7 @@ class SimpleEE():
 	def getFitness(self):
 		return fitness(self.genotype)
 
-class EE2:
+class EA2:
 	def __init__(self, genotype):
 		self.genotype = genotype
 		self.mutationStep = [0.8 for _ in range(0,30)];
@@ -66,7 +66,6 @@ class EE2:
 			if self.__getFitness(newGenotype) <= self.__getFitness(self.genotype):			
 				self.genotype = newGenotype
 				self.hitVector[i][self.iter%5] = 1
-
 			else:
 				self.hitVector[i][self.iter%5] = 0
 
@@ -85,18 +84,16 @@ if __name__ == '__main__':
 	#genotype = [0.1  for _ in range(0, 30)]
 	genotype = [(random.random()*30 ) - 15  for _ in range(0, 30)]
 	
-	SEE = EE2(genotype)
+	EA = EA2(genotype)
 	
 	fitList = []
 	tqdmBar = tqdm( range(0, num_iterations) )
 	for i in tqdmBar:
-		fitList.append(SEE.getFitness())
-		#tqdmBar.set_description("Fit: {:0.2f}, StdDev: {:0.2f}".format(SEE.getFitness(), SEE.stdDev))
-		tqdmBar.set_description("Fit: {}, StdDev: {}".format(SEE.getFitness(), SEE.stdDev[0]))
-		
-		SEE.mutation()
-
-		#print  SEE.genotype, SEE.getFitness()
+		fitList.append(EA.getFitness())
+		#tqdmBar.set_description("Fit: {:0.2f}, StdDev: {:0.2f}".format(EA.getFitness(), EA.stdDev))
+		tqdmBar.set_description("Fit: {}, StdDev[0]: {}".format(EA.getFitness(), EA.stdDev[0]))
+		EA.mutation()
+		#print  EA.genotype, EA.getFitness()
 
 	print ("\n\nInitial Fitness: {}".format(fitList[0]))
 	print ("Fitness After {} Iterations: {}".format(num_iterations, np.min(fitList)))
