@@ -8,7 +8,7 @@ import copy
 class SimpleEA():
 
 	def __init__(self, genotype, convergenceLimit = 10000):
-		self.genotype = genotype
+		self.genotype = np.array(genotype, dtype=np.float64)
 		self.mutationStep = 0.8
 		self.stdDev = [5]
 		self.hitVector = [0 for _ in range(0,5)]
@@ -24,11 +24,12 @@ class SimpleEA():
 		hit  = np.sum(self.hitVector)
 		if hit > 1:
 			self.stdDev[0] /= self.mutationStep
-		elif hit < 1:
+		elif hit < 1 and self.stdDev[0] > self.stdMinValue:
 			self.stdDev[0] *= self.mutationStep
 
-		son = [ i + np.random.normal(0.0, self.stdDev[0]) for i in self.genotype]
+		son = self.genotype + np.random.normal(0.0, self.stdDev[0])
 		sonFitness = self.__getFitness(son)
+
 		if  sonFitness <= self.bestFitness:			
 			self.genotype = son
 			self.bestFitness = sonFitness
@@ -59,9 +60,9 @@ class SimpleEA():
 
 class EA2:
 	def __init__(self, genotype, convergenceLimit = 1000):
-		self.genotype = genotype
-		self.mutationStep = [0.8 for _ in range(0,30)]
-		self.stdDev = [5 for _ in range(0, 30)]
+		self.genotype = np.array(genotype, dtype=np.float)
+		self.mutationStep = 0.8
+		self.stdDev = np.ones(30)*5
 		self.hitVector = [[0, 0, 0, 0, 0] for _ in range(0,30)]
 		
 		self.bestFitness = self.__getFitness(genotype)
@@ -79,9 +80,9 @@ class EA2:
 		for i in range(30):
 			hit  = np.sum(self.hitVector[i])
 			if hit > 1:
-				self.stdDev[i] /= self.mutationStep[i]
+				self.stdDev[i] /= self.mutationStep
 			elif hit < 1 and self.stdDev[i] >= self.stdMinValue:
-				self.stdDev[i] *= self.mutationStep[i]
+				self.stdDev[i] *= self.mutationStep
 			son = copy.deepcopy(self.genotype)
 			son[i] += np.random.normal(0.0, self.stdDev[i])
 			sonFitness = self.__getFitness(son)
@@ -212,15 +213,18 @@ class EA3:
 
 
 if __name__ == '__main__':
-	num_iterations = 1000000
+	num_iterations = 200000
 
-	genotype = (np.random.random((10, 30))*30) - 15
-
+	genotype = (np.random.random((1, 30))*30) - 15
 	EA = EA3(genotype)
 	tqdmBar = tqdm(range(num_iterations))
 	for i in tqdmBar:
 		minFit, end = EA.forward()
 		tqdmBar.set_description("Fit: {}".format(minFit))
+
+	# genotype1 = np.array((np.random.random((1, 30))*30) - 15)[0]
+	# #EA = SimpleEA(genotype1)
+	# EA = EA2(genotype1)
 	# fitList = []
 	# tqdmBar = tqdm( range(0, num_iterations))
 	# for i in tqdmBar:
@@ -235,5 +239,3 @@ if __name__ == '__main__':
 
 	# print ("\n\nInitial Fitness: {}".format(fitList[0]))
 	# print ("Fitness After {} Iterations: {}".format(num_iterations, np.min(fitList)))
-	# print ("Final Solution:")
-
