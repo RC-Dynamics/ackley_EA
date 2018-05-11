@@ -125,6 +125,7 @@ class EA3:
 		self.population = population
 		self.popSize = len(population)
 		self.numGenes = len(population[0])
+		self.tau = 1/(np.sqrt(self.numGenes))
 		self.popFit = np.zeros((self.popSize))
 		self.stdDev = (np.random.random((self.popSize, self.numGenes))*4) + 1
 
@@ -132,11 +133,16 @@ class EA3:
 		self.convergenceLimit = convergenceLimit
 		self.convergenceCount = 0
 		self.parent_index = []
+		self.bestOldFitness = 0
+		self.convergenceCount = 0
+		self.convergenceLimit = convergenceLimit
+
 		self.__init_fitness()
 	
 	def __init_fitness(self):
 		for i, genotype in enumerate(self.population):
 			self.popFit[i] = self.__getFitness(genotype)
+
 
 	def forward(self):
 		self.parent_selection()
@@ -144,20 +150,20 @@ class EA3:
 		self.mutation()
 		self.childrens_selection()
 		self.iter += 1
-		return (np.min(self.popFit)),self.stopCondition()
+		return (np.min(self.popFit), np.max(self.stdDev)),self.stopCondition()
 
 	def parent_selection(self):
 		"""
 		Roulette Function
 		"""
 		self.parent_index = []
-		fitSum = np.sum( 1/(self.popFit+1e-20) )
+		fitSum = np.sum( 1/(self.popFit+0.1) )
 		
 		for i in range(self.popSize*2):
 			summ = 0
 			choice = random() * fitSum
 			for i in range(self.popSize):
-				summ += 1/(self.popFit[i]+1e-20)
+				summ += 1/(self.popFit[i]+0.1)
 				if(choice <= summ):
 					self.parent_index.append(i)
 					break
@@ -169,8 +175,13 @@ class EA3:
 		childrensDev = []
 		for i in range(self.popSize):
 			idx, idy = self.parent_index[i * 2], self.parent_index[i * 2 + 1]
-			child = (self.population[idx] + self.population[idy]) / 2.0
-			childDev = (self.stdDev[idx] + self.stdDev[idy]) / 2.0  
+			select =  np.random.randint(2, size=len(self.population[idx]) )
+			nselect = 1 - select 
+			selectDev =  np.random.randint(2, size=len(self.population[idx]) )
+			nselectDev = 1 - selectDev 
+			child = (self.population[idx] * select) + (self.population[idy] * nselect)
+			childDev = (self.stdDev[idx] * selectDev) + ( self.stdDev[idy] * nselectDev )  
+			#childDev = (self.stdDev[idx] + self.stdDev[idy] )/2.0  
 			childrens.append(child)
 			childrensDev.append(childDev)
 
@@ -179,6 +190,7 @@ class EA3:
 		
 
 	def mutation(self):
+		self.childrensDev *= np.exp(self.tau * np.random.normal(0.0, 1)) 
 		self.childrens = self.childrens + np.random.normal(0.0, self.childrensDev)	
 		childrensFit = np.zeros(self.popSize)
 		for i, genotype in enumerate(self.childrens):
@@ -186,18 +198,22 @@ class EA3:
 		self.childrensFit = np.array(childrensFit)
 	
 	def childrens_selection(self):
+		self.bestOldFitness = np.min(self.popFit)
 		newPop = np.vstack((self.population, self.childrens))
 		newFit = np.hstack((self.popFit, self.childrensFit))
 		newDev = np.vstack((self.stdDev, self.childrensDev))
 
 		fitOrd = newFit.argsort()
+		
 		newPop = newPop[fitOrd[::-1]]
 		newDev = newDev[fitOrd[::-1]]
 		newFit = newFit[fitOrd[::-1]]
-
+		
 		self.population = newPop[-self.popSize:]
 		self.stdDev = newDev[-self.popSize:]
 		self.popFit = newFit[-self.popSize:]
+
+		self.bestFitness = np.min(self.popFit)
 			
 	def __getFitness(self, genotype):
 		return fitness(genotype)
@@ -206,21 +222,28 @@ class EA3:
 		return self.bestFitness
 
 	def stopCondition(self):
-		if(self.convergenceCount >= self.convergenceLimit):
-			return True
+		if( self.bestFitness >= self.bestOldFitness):
+			self.convergenceCount += 1
+			if self.convergenceCount > self.convergenceLimit:
+				return True
 		else:
-			return False
+			self.convergenceCount = 0
+		return False
+
 
 
 if __name__ == '__main__':
-	num_iterations = 200000
+	num_iterations = 20000
 
-	genotype = (np.random.random((1, 30))*30) - 15
+	genotype = (np.random.random((100, 30))*30) - 15
 	EA = EA3(genotype)
 	tqdmBar = tqdm(range(num_iterations))
 	for i in tqdmBar:
 		minFit, end = EA.forward()
-		tqdmBar.set_description("Fit: {}".format(minFit))
+		tqdmBar.set_description("Fit: {}, {}".format(minFit, end))
+		if end == True:
+			tqdmBar.close()
+			break
 
 	# genotype1 = np.array((np.random.random((1, 30))*30) - 15)[0]
 	# #EA = SimpleEA(genotype1)
