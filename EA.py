@@ -1,5 +1,6 @@
 import numpy as np
-from random import random
+import matplotlib.pyplot as plt
+from random import random 
 from tqdm import tqdm
 from fitness_ackley import fitness_ackley as fitness
 import copy
@@ -7,7 +8,9 @@ import copy
 
 class SimpleEA():
 
-	def __init__(self, genotype, convergenceLimit = 10000):
+	def __init__(self, convergenceLimit = 10000):
+		print ("Simple Evolutionary Algorithm")
+		genotype = [(random()*30) - 15  for _ in range(0, 30)]
 		self.genotype = np.array(genotype, dtype=np.float64)
 		self.mutationStep = 0.8
 		self.stdDev = [5]
@@ -20,7 +23,7 @@ class SimpleEA():
 		self.convergenceLimit = convergenceLimit
 		self.convergenceCount = 0
 		
-	def mutation(self):
+	def forward(self): # Only Mutation
 		hit  = np.sum(self.hitVector)
 		if hit > 1:
 			self.stdDev[0] /= self.mutationStep
@@ -58,8 +61,10 @@ class SimpleEA():
 			return False
 
 
-class EA2:
-	def __init__(self, genotype, convergenceLimit = 1000):
+class EA:
+	def __init__(self, convergenceLimit = 1000):
+		print ("Evolutionary Algorithm")
+		genotype = [(random()*30) - 15  for _ in range(0, 30)]
 		self.genotype = np.array(genotype, dtype=np.float)
 		self.mutationStep = 0.8
 		self.stdDev = np.ones(30)*5
@@ -73,7 +78,7 @@ class EA2:
 		self.convergenceLimit = convergenceLimit
 		self.convergenceCount = 0
 
-	def mutation(self):
+	def forward(self): # Only Mutation
 		if self.iter % 250 == 250-1:
 			self.stdMinValue /= 5
 
@@ -112,23 +117,30 @@ class EA2:
 			return True
 		else:
 			return False
+	def getNumOfConvergence(self):
+		return self.convergenceCount
+	
+	def getGenotype(self):
+		return self.genotype
 
 
-class EA3:
+class RefinedEA:
 	"""
     EA3 Dif:
 		Bigger Population  
 		Crossover 
 		Auto-adaptive
     """
-	def __init__(self, population, convergenceLimit = 1000):
+	def __init__(self, convergenceLimit = 1000):
+		print ("Refined Evolutionary Algorithm")
+		population = (np.random((100, 30))*30) - 15
 		self.population = population
 		self.popSize = len(population)
 		self.numGenes = len(population[0])
 		self.tau = 1/(np.sqrt(self.numGenes))
 		self.popFit = np.zeros((self.popSize))
-		self.stdDev = (np.random.random((self.popSize, self.numGenes))*4) + 1
-
+		self._stdDev = (np.random((self.popSize, self.numGenes))*4) + 1
+		self.stdDev = self._stdDev[0]
 		self.iter = 0
 		self.convergenceLimit = convergenceLimit
 		self.convergenceCount = 0
@@ -138,6 +150,7 @@ class EA3:
 		self.convergenceLimit = convergenceLimit
 
 		self.__init_fitness()
+		self.bestFitness = np.min(self.popFit)
 	
 	def __init_fitness(self):
 		for i, genotype in enumerate(self.population):
@@ -150,7 +163,8 @@ class EA3:
 		self.mutation()
 		self.childrens_selection()
 		self.iter += 1
-		return (np.min(self.popFit), np.max(self.stdDev)),self.stopCondition()
+		self.stdDev = self._stdDev[0]
+		return (np.min(self.popFit), np.max(self._stdDev)),self.stopCondition()
 
 	def parent_selection(self):
 		"""
@@ -180,8 +194,8 @@ class EA3:
 			selectDev =  np.random.randint(2, size=len(self.population[idx]) )
 			nselectDev = 1 - selectDev 
 			child = (self.population[idx] * select) + (self.population[idy] * nselect)
-			childDev = (self.stdDev[idx] * selectDev) + ( self.stdDev[idy] * nselectDev )  
-			#childDev = (self.stdDev[idx] + self.stdDev[idy] )/2.0  
+			childDev = (self._stdDev[idx] * selectDev) + ( self._stdDev[idy] * nselectDev )  
+			#childDev = (self._stdDev[idx] + self._stdDev[idy] )/2.0  
 			childrens.append(child)
 			childrensDev.append(childDev)
 
@@ -201,7 +215,7 @@ class EA3:
 		self.bestOldFitness = np.min(self.popFit)
 		newPop = np.vstack((self.population, self.childrens))
 		newFit = np.hstack((self.popFit, self.childrensFit))
-		newDev = np.vstack((self.stdDev, self.childrensDev))
+		newDev = np.vstack((self._stdDev, self.childrensDev))
 
 		fitOrd = newFit.argsort()
 		
@@ -210,7 +224,7 @@ class EA3:
 		newFit = newFit[fitOrd[::-1]]
 		
 		self.population = newPop[-self.popSize:]
-		self.stdDev = newDev[-self.popSize:]
+		self._stdDev = newDev[-self.popSize:]
 		self.popFit = newFit[-self.popSize:]
 
 		self.bestFitness = np.min(self.popFit)
@@ -229,36 +243,55 @@ class EA3:
 		else:
 			self.convergenceCount = 0
 		return False
-
+		
+	def getNumOfConvergence(self):
+		return self.convergenceCount
 
 
 if __name__ == '__main__':
 	num_iterations = 20000
 
-	genotype = (np.random.random((100, 30))*30) - 15
-	EA = EA3(genotype)
-	tqdmBar = tqdm(range(num_iterations))
-	for i in tqdmBar:
-		minFit, end = EA.forward()
-		tqdmBar.set_description("Fit: {}, {}".format(minFit, end))
-		if end == True:
-			tqdmBar.close()
-			break
-
-	# genotype1 = np.array((np.random.random((1, 30))*30) - 15)[0]
-	# #EA = SimpleEA(genotype1)
-	# EA = EA2(genotype1)
-	# fitList = []
-	# tqdmBar = tqdm( range(0, num_iterations))
-	# for i in tqdmBar:
-	# 	tqdmBar.set_description("Fit: {}, StdDev[0]: {}".format(EA.getFitness(), EA.stdDev[0]))
-	# 	EA.mutation()
-	# 	fitList.append(EA.getFitness())
-	# 	if(EA.stopCondition()):
-	# 		tqdmBar.close()
-	# 		break
+	# EA = SimpleEA()
+	EA = EA()
+	# EA = RefinedEA()
 	
-	# 	#print  EA.genotype, EA.getFitness()
+	convergeFitness = []
+	numOfConvergences = []
+	minNumIteration = []
+	num_tests = 2
 
-	# print ("\n\nInitial Fitness: {}".format(fitList[0]))
-	# print ("Fitness After {} Iterations: {}".format(num_iterations, np.min(fitList)))
+	for j in range(num_tests):
+		fitList = []
+		tqdmBar = tqdm( range(0, num_iterations))
+		for i in tqdmBar:
+			tqdmBar.set_description("Fit: {}, StdDev[0]: {}".format(EA.getFitness(), EA.stdDev[0]))
+			EA.forward()
+			fitList.append(EA.getFitness())
+			if(EA.stopCondition()):
+				tqdmBar.close()
+				break
+
+		print ("Initial Fitness: {}".format(fitList[0]))
+		print ("Fitness After {} iterations: {}\n\n".format(i, EA.getFitness()))
+		# print ("Solution: {}\n".format(EA.getGenotype()))
+
+		convergeFitness.append(EA.getFitness())
+		minNumIteration.append(i-EA.getNumOfConvergence())
+
+		EA.__init__()
+	
+	convergeFitness_mean = np.mean(convergeFitness)
+	minNumIteration_mean = np.mean(minNumIteration)
+	print("\n Algorithm Converged in {} / {}".format(len([x for x in convergeFitness if x < 0.1e-10]), num_tests))
+	print ("\nMean Fitness: {}|  Min Iterarions: {}\n".format(convergeFitness_mean, minNumIteration_mean))
+
+	fig, axs = plt.subplots(ncols=2)
+
+	# basic plot
+	axs[0].boxplot(convergeFitness)
+	axs[0].set_title('Converge Fitness')
+
+	# change outlier point symbols
+	axs[1].boxplot(minNumIteration)
+	axs[1].set_title('Min of Iterations to Converge')
+	plt.show()
