@@ -25,8 +25,7 @@ def fitness_ackley(genotype = [0.0]):
     
     term1 = (-c1) * np.exp( -c2 * (((1 / numGenes) * sum1) ** 0.5 ))
     term2 = -np.exp(( 1 / numGenes ) * sum2)
-
-    err = term1 + c1 + term2 + np.exp(1.0)
+    err = term1 + c1 + term2 + 2.718281828459045
     
     return (err)
 
