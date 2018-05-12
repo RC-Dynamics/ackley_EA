@@ -59,6 +59,10 @@ class SimpleEA():
 			return True
 		else:
 			return False
+	def getNumOfConvergence(self):
+		return self.convergenceCount
+	def getConvergenceLimit(self):
+		return self.convergenceLimit
 
 
 class EA:
@@ -119,6 +123,9 @@ class EA:
 			return False
 	def getNumOfConvergence(self):
 		return self.convergenceCount
+
+	def getConvergenceLimit(self):
+		return self.convergenceLimit
 	
 	def getGenotype(self):
 		return self.genotype
@@ -133,13 +140,13 @@ class RefinedEA:
     """
 	def __init__(self, convergenceLimit = 1000):
 		print ("Refined Evolutionary Algorithm")
-		population = (np.random((100, 30))*30) - 15
+		population = (np.random.random((100,30))*30) - 15
 		self.population = population
 		self.popSize = len(population)
 		self.numGenes = len(population[0])
 		self.tau = 1/(np.sqrt(self.numGenes))
 		self.popFit = np.zeros((self.popSize))
-		self._stdDev = (np.random((self.popSize, self.numGenes))*4) + 1
+		self._stdDev = (np.random.random((self.popSize, self.numGenes))*4) + 1
 		self.stdDev = self._stdDev[0]
 		self.iter = 0
 		self.convergenceLimit = convergenceLimit
@@ -246,19 +253,24 @@ class RefinedEA:
 		
 	def getNumOfConvergence(self):
 		return self.convergenceCount
+	
+	def getConvergenceLimit(self):
+		return self.convergenceLimit
 
 
 if __name__ == '__main__':
 	num_iterations = 20000
 
 	# EA = SimpleEA()
-	EA = EA()
-	# EA = RefinedEA()
+	# EA = EA()
+	EA = RefinedEA()
+
+	
 	
 	convergeFitness = []
 	numOfConvergences = []
 	minNumIteration = []
-	num_tests = 2
+	num_tests = 30
 
 	for j in range(num_tests):
 		fitList = []
@@ -276,14 +288,19 @@ if __name__ == '__main__':
 		# print ("Solution: {}\n".format(EA.getGenotype()))
 
 		convergeFitness.append(EA.getFitness())
-		minNumIteration.append(i-EA.getNumOfConvergence())
+		minNumIteration.append(i-EA.getNumOfConvergence()+1)
 
 		EA.__init__()
 	
 	convergeFitness_mean = np.mean(convergeFitness)
 	minNumIteration_mean = np.mean(minNumIteration)
-	print("\n Algorithm Converged in {} / {}".format(len([x for x in convergeFitness if x < 0.1e-10]), num_tests))
-	print ("\nMean Fitness: {}|  Min Iterarions: {}\n".format(convergeFitness_mean, minNumIteration_mean))
+
+	convergeFitness_std = np.std(convergeFitness)
+	minNumIteration_std = np.std(minNumIteration)
+
+	print ("\nAlgorithm Converged in {} / {} -- Converge condition of {} iterarions".format(len([x for x in convergeFitness if x < 0.1e-10]), num_tests, EA.getConvergenceLimit()))
+	print ("Mean Fitness: {}| Mean of minimun Iterarions: {}".format(convergeFitness_mean, minNumIteration_mean))
+	print ("Std Fitness: {}| Std of minimun Iterarions: {}\n".format(convergeFitness_std, minNumIteration_std))
 
 	fig, axs = plt.subplots(ncols=2)
 
