@@ -211,7 +211,7 @@ class RefinedEA:
 		
 
 	def mutation(self):
-		self.childrensDev *= np.exp(self.tau * np.random.normal(0.0, 1, (1, self.numGenes)))
+		self.childrensDev *= np.exp(self.tau * np.random.normal(0.0, 1))
 		self.childrens = self.childrens + np.random.normal(0.0, self.childrensDev)	
 		childrensFit = np.zeros(self.popSize)
 		for i, genotype in enumerate(self.childrens):
